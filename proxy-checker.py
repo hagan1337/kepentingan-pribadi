@@ -1,27 +1,30 @@
 import requests
-
-def is_proxy_working(proxy_url):
+import threading
+# Usage: python3 checker.py threads
+def check_proxy(proxy):
     try:
-        response = requests.get(proxy_url)
+        response = requests.get('https://www.google.com/', proxies={'http': proxy, 'https': proxy}, timeout=13)
         if response.status_code == 200:
-            return True
+            print(f"WORK -->  {proxy} ")
+            with open('proxy.txt', 'a') as f:
+                f.write(proxy + '\n')
         else:
-            return False
+            print(f"Proxy BAD {proxy} ")
     except:
-        return False
+        print(f"Proxy BAD {proxy} ")
 
-def create_proxy_file(proxy_url):
-    with open('proxies.txt', 'a') as f:
-        f.write(proxy_url + '\n')
+# Read proxies from a file
+with open('proxies.txt', 'r') as f:
+    proxy_list = f.read().splitlines()
 
-def read_proxy_list(proxy_list_file):
-    with open(proxy_list_file, 'r') as f:
-        return f.readlines()
+# Create threads to check proxies
+threads = []
+for proxy in proxy_list:
+    thread = threading.Thread(target=check_proxy, args=[proxy])
+    thread.start()
+    threads.append(thread)
 
-if __name__ == '__main__':
-    proxy_list = read_proxy_list('proxy_list.txt')
-    for proxy in proxy_list:
-        proxy = proxy.strip()
-        if is_proxy_working(proxy):
-            create_proxy_file(proxy)
-            print('Proxy {} is working and has been added to the file proxies.txt!'.format(proxy))
+# Wait for all threads to finish
+for thread in threads:
+    thread.join()
+    
